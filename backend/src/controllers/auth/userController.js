@@ -1,5 +1,6 @@
 import asyncHandler from "express-async-handler";
 import User from "../../models/auth/UserModel.js";
+import generateToken from "../../helpers/generateToken.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
@@ -31,6 +32,17 @@ export const registerUser = asyncHandler(async (req, res) => {
         password,
     });
 
+    //generate token with user id
+    const token = generateToken(user._id);
+    //set cookie with token
+    res.cookie("token", token, {
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: true,
+        maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
+    });
+
     if(user) {
         const { _id, name, email, role, photo, bio, isVerified } = user;
         //201 created
@@ -42,6 +54,7 @@ export const registerUser = asyncHandler(async (req, res) => {
             photo,
             bio,
             isVerified,
+            token,
 
             
         });
