@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -36,6 +37,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin", "creator"],
         default: "user",
+
     }, isVerified:{
         type: Boolean,
         default: false,
@@ -43,7 +45,29 @@ const UserSchema = new mongoose.Schema({
 
 }, { timestamps: true, minimize: true });   
 
+// encrypt password before saving to database ( hash )
+
+UserSchema.pre("save", async function(next){
+    if(!this.isModified("password")){
+        return next();
+
+    }
+
+    const salt = await bcrypt.genSalt(10);
+
+    const hashedPassword = await bcrypt.hash(this.password, salt);
+    //set the password to the hashed password
+    this.password = hashedPassword;
+    //call the next middleware function
+    next(); 
+    
+
+
+})
 
 const User = mongoose.model("User", UserSchema);
 
 export default User;
+
+
+//min 1:11:27

@@ -86,6 +86,8 @@ export const loginUser = asyncHandler(async (req, res) => {
     //check if password match the user password
     const isMatch = await bcrypt.compare(password, userExist.password);
     if (!isMatch) {
+        console.log(password, userExist.password);
+        console.log(isMatch);
         res.status(400).json({message:"Contraseña incorrecta"});
     }
 
