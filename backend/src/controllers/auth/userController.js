@@ -134,7 +134,7 @@ export const logoutUser = asyncHandler(async(req, res) => {
 })
 
 
-//get user
+//GET USER
 
 export const getUser = asyncHandler(async(req, res) => {
     // get user details from the token--> explude password
@@ -143,8 +143,42 @@ export const getUser = asyncHandler(async(req, res) => {
     if (user) {
         res.status(200).json({message:"Usuario logueado", user: req.user});
     } else {
-        res.status(400).json({message:"Error al obtener el usuario"});
+        res.status(404).json({message:"Error al obtener el usuario"});
     }
     
+
+})
+
+//UPDATE USER
+
+export const updateUser = asyncHandler(async(req, res) => {
+    //GET USER DETAILS FROM THE TOKEN --> USING MIDDLEWARE
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404).json({message:"Usuario no encontrado"});
+    }
+
+    if (user){
+        const { name, bio, photo } = req.body;
+        //update user details
+        user.name = name || user.name;
+        user.bio = req.body.bio || user.bio;
+        user.photo = photo || user.photo;
+
+        //save user
+        const updatedUser = await user.save();
+
+        res.status(200).json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            photo: updatedUser.photo,
+            bio: updatedUser.bio,
+            isVerified: updatedUser.isVerified,
+            // token: generateToken(updatedUser._id),
+        });
+    }
+
 
 })
