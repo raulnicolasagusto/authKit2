@@ -1,6 +1,7 @@
 import express from 'express';
 import { loginUser, logoutUser, getUser, registerUser, updateUser } from '../controllers/auth/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect,adminMiddleware } from '../middleware/authMiddleware.js';
+import { deleteUser } from '../controllers/auth/adminController.js';
 
 const router = express.Router();
 
@@ -10,6 +11,9 @@ router.get("/logout", logoutUser);
 // incluimos el middleware en la autenticacion , ya que no debemos estar registrados para ingresar a la ruta de perfil
 router.get("/user",protect, getUser);
 router.patch("/user",protect, updateUser);
+
+//admin routes, a agregamos un middleware mas para el admin, ya que este puede eliminar usuarios
+router.delete("/admin/users/:id",protect, adminMiddleware, deleteUser);
 
 
 export default router;

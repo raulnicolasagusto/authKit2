@@ -26,4 +26,17 @@ export const protect = asyncHandler(async (req, res, next) => {
     }
 })
 
-export default protect;
+
+// ADMIN MIDDLEWARE
+
+export const adminMiddleware = asyncHandler(async (req, res, next) => {
+     // check if user is admin
+    if (req.user && req.user.role === "admin") {      
+        //if user is admin, move to the next middleware/controller 
+        next();
+        return;
+    }
+    // if user is not admin, send error response
+    res.status(401).json({ message: "No autorizado, no tienes permisos de administrador" });
+    return;
+});
