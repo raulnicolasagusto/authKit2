@@ -1,13 +1,14 @@
 import express from 'express';
-import { registerUser } from '../controllers/auth/userController.js';
-import { loginUser, logoutUser } from '../controllers/auth/userController.js';
+import { loginUser, logoutUser, getUser, registerUser } from '../controllers/auth/userController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.post("/register", registerUser)
 router.post("/login", loginUser);
-router.post("/logout", logoutUser);
-
+router.get("/logout", logoutUser);
+// incluimos el middleware en la autenticacion , ya que no debemos estar registrados para ingresar a la ruta de perfil
+router.get("/user",protect, getUser);
 
 
 export default router;

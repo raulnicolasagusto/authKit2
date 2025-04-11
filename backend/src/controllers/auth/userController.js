@@ -129,6 +129,22 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 export const logoutUser = asyncHandler(async(req, res) => {
     res.clearCookie("token");
-    res.status(200).json({message:"Usuario des logueado exitosamente"});
+    res.status(200).json({message:"Usuario deslogueado exitosamente"});
+
+})
+
+
+//get user
+
+export const getUser = asyncHandler(async(req, res) => {
+    // get user details from the token--> explude password
+    const user = await User.findById(req.user._id).select("-password");
+
+    if (user) {
+        res.status(200).json({message:"Usuario logueado", user: req.user});
+    } else {
+        res.status(400).json({message:"Error al obtener el usuario"});
+    }
+    
 
 })
