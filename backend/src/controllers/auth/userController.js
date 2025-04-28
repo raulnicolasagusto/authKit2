@@ -3,6 +3,11 @@ import User from "../../models/auth/UserModel.js";
 import generateToken from "../../helpers/generateToken.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import Token from "../../models/auth/Token.js";
+import crypto from "node:crypto";
+import hashToken from "../../helpers/hashToken.js";
+import sendEmail from "../../helpers/sendEmail.js";
+
 
 
 // USER REGISTER
@@ -200,3 +205,62 @@ export const userLoginStatus = asyncHandler(async(req, res) => {
     }
 
 });  
+
+//email verification
+export const verifyEmail = asyncHandler(async(req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404).json({message:"Usuario no encontrado"});
+    }
+
+    //check if user is already verified
+
+    if (user.isVerified) {
+        res.status(400).json({message:"El usuario ya esta verificado"});
+    }
+
+    let token = await Token.findOne({ userId: user._id });
+
+    //if token exists, delete de token 
+    if (token) {
+        await token.deleteOne({ userId: user._id });
+        
+    }
+
+    //create a verification token using crypto
+    const verificationToken = crypto.randomBytes(64).toString("hex") + user._id;
+    //hash the verification token
+    const hashedToken = await hashToken(verificationToken);
+
+    await new Token({
+        userId: user._id,
+        verificationToken: hashedToken,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000, //24 hs
+    }).save();
+
+    //verification link
+    const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+    //send email to user with the verification link
+    const subject = "Verifica tu cuenta de usuario - AuthKit";
+    const send_to = user.email;
+    const reply_to = "noreply@gmail.com";
+    const template = "emailVerification";
+    const send_from = process.env.USER_EMAIL;
+    const name = user.name;
+    const link = verificationLink;
+
+    try {
+        await sendEmail(subject, send_to, send_from, reply_to, template, name, link);
+
+        res.status(200).json({message:"Email de verificacion enviado"});
+
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message:"Error al enviar el correo de verificacion"});
+    }
+
+})
