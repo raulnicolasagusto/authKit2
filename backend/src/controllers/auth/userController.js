@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import User from "../../models/auth/UserModel.js";
 import generateToken from "../../helpers/generateToken.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 
 // USER REGISTER
@@ -182,3 +183,20 @@ export const updateUser = asyncHandler(async(req, res) => {
 
 
 })
+
+//USER LOGIN STATUS, nos dice con true o false si el usuario esta logueado o no
+export const userLoginStatus = asyncHandler(async(req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(401).json({ message: "No autorizado, por favor logueate" });
+    }
+    // verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded) {
+     res.status(200).json(true);
+    }else{
+        res.status(401).json(false);
+    }
+
+});  
