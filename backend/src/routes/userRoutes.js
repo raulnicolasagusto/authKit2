@@ -1,7 +1,7 @@
 import express from 'express';
 import { loginUser, logoutUser, getUser, registerUser, updateUser } from '../controllers/auth/userController.js';
-import { protect,adminMiddleware } from '../middleware/authMiddleware.js';
-import { deleteUser } from '../controllers/auth/adminController.js';
+import { protect,adminMiddleware, creatorMiddleware } from '../middleware/authMiddleware.js';
+import { deleteUser, getAllUsers } from '../controllers/auth/adminController.js';
 
 const router = express.Router();
 
@@ -14,6 +14,9 @@ router.patch("/user",protect, updateUser);
 
 //admin routes, a agregamos un middleware mas para el admin, ya que este puede eliminar usuarios
 router.delete("/admin/users/:id",protect, adminMiddleware, deleteUser);
+
+//get all users
+router.get("/admin/users/creator", protect, creatorMiddleware, getAllUsers);
 
 
 export default router;

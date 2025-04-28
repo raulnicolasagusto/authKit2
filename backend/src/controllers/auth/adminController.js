@@ -23,7 +23,35 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
    } catch (error) {
          // handle any errors that occur during the process
-         res.status(500).json({ message: "Error al eliminar el usuario", name, id });
+         res.status(500).json({ message: "Error al eliminar el usuario"});
          return;
    }
 })
+
+
+// get all users
+
+export const getAllUsers = asyncHandler(async (req, res) => {
+    const user = await User.find({});
+
+    try {
+        if (!user){
+            return res.status(404).json({ message: "No se encontraron usuarios" });
+        }
+    
+        res.status(200).json({
+            name: req.user.name,
+            role: req.user.role,
+            message:" has requested all users",
+           
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error al obtener los usuarios" });
+        return;
+    }
+
+    
+
+})
+
+//min 1:36:00
