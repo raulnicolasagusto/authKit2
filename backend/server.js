@@ -4,6 +4,8 @@ import cors from 'cors';
 import connect from './src/db/connect.js';
 import cookieParser from 'cookie-parser';
 import fs from 'node:fs';
+import emailRoutes from "./src/routes/emailRoutes.js";
+
 
 dotenv.config();
 
@@ -47,5 +49,7 @@ const server = async () =>{
     }
     
 };
+
+
 
 server();

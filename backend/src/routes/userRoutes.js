@@ -2,6 +2,7 @@ import express from 'express';
 import { loginUser, logoutUser, getUser, registerUser, updateUser, userLoginStatus, verifyEmail } from '../controllers/auth/userController.js';
 import { protect,adminMiddleware, creatorMiddleware } from '../middleware/authMiddleware.js';
 import { deleteUser, getAllUsers } from '../controllers/auth/adminController.js';
+import { testEmail } from "../controllers/auth/emailController.js";
 
 
 const router = express.Router();
@@ -23,7 +24,7 @@ router.get("/admin/users/creator", protect, creatorMiddleware, getAllUsers);
 router.get("/login_status", userLoginStatus);
 
 // verify user --> Email verification
-router.post("/verify-email", protect, verifyEmail);
+router.post("/verify-email", protect, testEmail);
 
 
 

@@ -252,15 +252,23 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     const name = user.name;
     const link = verificationLink;
 
-    try {
-        await sendEmail(subject, send_to, send_from, reply_to, template, name, link);
+//     try {
+//         await sendEmail(subject, send_to, send_from, reply_to, template, name, link);
 
-        res.status(200).json({message:"Email de verificacion enviado"});
+//         res.status(200).json({message:"Email de verificacion enviado"});
 
 
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({message:"Error al enviar el correo de verificacion"});
-    }
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({message:"Error al enviar el correo de verificacion"});
+//     }
+
+// })
+
+await sendEmail(
+    newUser.email,
+    "Confirma tu cuenta",
+    `<p>Hola ${newUser.name}, hacé clic en el siguiente enlace para confirmar tu cuenta.</p>`
+  );
 
 })

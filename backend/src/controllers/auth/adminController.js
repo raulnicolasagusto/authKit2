@@ -53,5 +53,3 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     
 
 })
-
-//min 1:36:00
