@@ -3,6 +3,7 @@ import { loginUser, logoutUser, getUser, registerUser, updateUser, userLoginStat
 import { protect,adminMiddleware, creatorMiddleware } from '../middleware/authMiddleware.js';
 import { deleteUser, getAllUsers } from '../controllers/auth/adminController.js';
 import { testEmail } from "../controllers/auth/emailController.js";
+import { forgotPassword, resetPassword } from "../controllers/auth/userController.js";
 
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.get("/login_status", userLoginStatus);
 router.post("/verify-email", protect, testEmail);
 
 
-
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

@@ -1,36 +1,39 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
+import SibApiV3Sdk from 'sib-api-v3-sdk';
+import dotenv from 'dotenv';
 dotenv.config();
 
 const sendEmail = async (to, subject, html) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT), // 587
-      secure: false, // true para 465, false para 587
-      auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.EMAIL_PASS,
+    const client = SibApiV3Sdk.ApiClient.instance;
+    const apiKey = client.authentications['api-key'];
+    apiKey.apiKey = process.env.BREVO_API_KEY; // Usa variable de entorno
+
+    const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+    
+    const response = await tranEmailApi.sendTransacEmail({
+      sender: {
+        email: 'no-reply@authkit.com', // Puedes usar cualquier correo
+        name: 'AuthKit Team'
       },
-    });
-
-    const info = await transporter.sendMail({
-      from: `"AuthKit" <${process.env.USER_EMAIL}>`,
-      to, // destino
+      to: [{ email: to }],
       subject,
-      html, // cuerpo en HTML
+      htmlContent: html,
     });
 
-    console.log("Correo enviado:", info.messageId);
+    console.log('Email ID:', response.messageId);
+    return true;
   } catch (error) {
-    console.error("Error al enviar el email:", error);
-    throw new Error("No se pudo enviar el email");
+    console.error('Error completo:', {
+      status: error.status,
+      message: error.message,
+      response: error.response?.text,
+    });
+    throw new Error('Failed to send email');
   }
 };
 
 export default sendEmail;
-
-
+// nueva api key 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
 // import nodeMailer from "nodemailer";
 // import path from "path";
 // import dotenv from "dotenv";

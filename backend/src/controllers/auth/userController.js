@@ -272,3 +272,74 @@ await sendEmail(
   );
 
 })
+
+
+//A continuacion, configuracion de envio de emails gracias a Deepseek
+
+
+
+
+
+// 1. Solicitud de restablecimiento
+export const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    
+    // Busca al usuario en la base de datos
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  
+    // Genera un token temporal (válido por 1 hora)
+    const resetToken = generateToken(user._id, "1h");
+    user.passwordResetToken = resetToken;
+    await user.save();
+  
+    // Enlace para restablecer (ajusta la URL de tu frontend)
+    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+  
+    // Plantilla del correo
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Restablecer contraseña</h2>
+        <p>Haz clic en el botón para continuar:</p>
+        <a href="${resetUrl}" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+          Restablecer contraseña
+        </a>
+        <p style="margin-top: 20px; color: #888;">
+          Si no solicitaste esto, ignora este correo. El enlace expira en 1 hora.
+        </p>
+      </div>
+    `;
+  
+    // Envía el correo
+    await sendEmail(email, "Restablece tu contraseña en AuthKit", html);
+    res.status(200).json({ message: "Correo enviado con éxito" });
+  };
+  
+  // 2. Procesar el restablecimiento
+  export const resetPassword = async (req, res) => {
+    const { token, newPassword } = req.body;
+  
+    // Verifica el token
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(400).json({ message: "Token inválido o expirado" });
+    }
+  
+    // Busca al usuario con el token
+    const user = await User.findOne({ 
+      _id: decoded.id, 
+      passwordResetToken: token 
+    });
+    if (!user) {
+      return res.status(400).json({ message: "Token no válido" });
+    }
+  
+    // Actualiza la contraseña y limpia el token
+    user.password = newPassword;
+    user.passwordResetToken = undefined;
+    await user.save();
+  
+    res.status(200).json({ message: "Contraseña actualizada con éxito" });
+  };

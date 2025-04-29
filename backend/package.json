@@ -21,6 +21,7 @@
     "mongoose": "^8.13.2",
     "nodemailer": "^6.10.1",
     "nodemailer-express-handlebars": "^7.0.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "sib-api-v3-sdk": "^8.5.0"
   }
 }
