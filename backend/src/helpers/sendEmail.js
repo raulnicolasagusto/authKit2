@@ -33,6 +33,10 @@ const sendEmail = async (to, subject, html) => {
 };
 
 export default sendEmail;
+
+//para seguir con la parte de envio de email y token para verificar la cuenta, ir al siguinete timestamp:
+//min 2:22:00
+
 // nueva api key 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
 // import nodeMailer from "nodemailer";
 // import path from "path";
