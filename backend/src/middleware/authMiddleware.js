@@ -1,30 +1,40 @@
-import asyncHandler  from "express-async-handler";
+import asyncHandler from "express-async-handler";
 import jwt from "jsonwebtoken";
 import User from "../models/auth/UserModel.js";
 
 export const protect = asyncHandler(async (req, res, next) => {
-    try {
-        // check if user is logged in
-        const token = req.cookies.token;
-        if (!token) {
-            return res.status(401).json({ message: "No autorizado, por favor logueate" });
-        }
-        // verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // get the user from the token
-        const user = await User.findById(decoded.id).select("-password");
-        //check if user exist
-        if (!user) {
-            return res.status(401).json({ message: "Usuario no encontrado" });
-        }
-        //set user details in the request object
-        req.user = user;
-        //call the next middleware function
-        next();
-    } catch (error) {
-        
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: "No autorizado, por favor inicia sesión" });
     }
-})
+
+    // Verificar token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Obtener usuario y verificar versión del token
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no encontrado" });
+    }
+
+    // Verificar versión del token
+    if (user.tokenVersion !== decoded.version) {
+      return res.status(401).json({ message: "Sesión expirada, por favor inicia sesión nuevamente" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(401).json({ 
+      message: error.message === "jwt expired" 
+        ? "Sesión expirada" 
+        : "Error de autenticación" 
+    });
+  }
+});
+
 
 
 // ADMIN MIDDLEWARE

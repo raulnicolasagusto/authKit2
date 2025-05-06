@@ -1,16 +1,17 @@
 'use client';
-import React, {createContext, useEffect, useState, useContext} from 'react';
+import React, { createContext, useEffect, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
-const UserContext = React.createContext();
+const UserContext = createContext();
 
-export const UserContextProvider = ({children}) => {
-    const serverUrl = "http://localhost:8000";
+export const UserContextProvider = ({ children }) => {
+    const serverUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const router = useRouter();
  
-    const [user, setUser] = useState({});
+    const [user, setUser] = useState(null);
+    const [allUsers, setAllUsers] = useState([]);
     const [userState, setUserState] = useState({
         name: "",
         email: "",
@@ -24,23 +25,20 @@ export const UserContextProvider = ({children}) => {
     // Register user
     const registerUser = async (e) => {
         e.preventDefault();
-        if(!userState.name || !userState.email.includes("@") || !userState.password || userState.password.length < 6){
-            toast.error("Please fill all the fields correctly (min 6 characters)");
+        if (!userState.name || !userState.email.includes("@") || !userState.password || userState.password.length < 6) {
+            toast.error("Por favor complete todos los campos correctamente (mínimo 6 caracteres)");
             return;
         }
-        try{
+        try {
             const response = await axios.post(`${serverUrl}/api/v1/register`, userState);
-            toast.success("User registered successfully");
-            setUserState({
-                name: "",
-                email: "",
-                password: "",
-            });
+            toast.success("Usuario registrado exitosamente");
+            setUserState({ name: "", email: "", password: "" });
             router.push("/login");
         } catch (error) {
-            console.log(error);
+            toast.error(error.response?.data?.message || "Error al registrar usuario");
+            console.error("Registration error:", error);
         }
-    }
+    };
 
     // Login user
     const loginUser = async (e) => {
@@ -49,61 +47,53 @@ export const UserContextProvider = ({children}) => {
             const res = await axios.post(`${serverUrl}/api/v1/login`, {
                 email: userState.email,
                 password: userState.password,
-            }, {
-                withCredentials: true,
-            });
-            toast.success("User logged in successfully");
-            setUserState({
-                email: "",
-                password: "",
-            });
+            }, { withCredentials: true });
+            
+            toast.success("Inicio de sesión exitoso");
+            setUserState({ email: "", password: "" });
             await getUser();
             router.push("/");
         } catch (error) {
-            toast.error("El usuario y la contraseña no coinciden");
+            toast.error(error.response?.data?.message || "Usuario o contraseña incorrectos");
+            console.error("Login error:", error);
         }
-    }
+    };
 
     // Check login status
     const userLoginStatus = async () => {
         try {
-            const res = await axios.get(`${serverUrl}/api/v1/login_status`, {
-                withCredentials: true, 
+            const res = await axios.get(`${serverUrl}/api/v1/login_status`, { 
+                withCredentials: true 
             });
-            const loggedIn = !!res.data;
-            setLoading(false);
-            if(!loggedIn) router.push("/login");
-            return loggedIn;
+            return !!res.data;
         } catch (error) {
-            console.log("Error al obtener el estado del usuario: ", error);
+            console.error("Login status error:", error);
             return false;
         }
-    }
+    };
 
-    // Logout
+    // Logout user
     const logoutUser = async () => {
         try {
-            await axios.get(`${serverUrl}/api/v1/logout`, {
-                withCredentials: true,
-            });
-            toast.success("Usuario deslogueado correctamente");
+            await axios.get(`${serverUrl}/api/v1/logout`, { withCredentials: true });
+            toast.success("Sesión cerrada correctamente");
             setUser(null);
             setInitialized(false);
             router.push("/login");
         } catch (error) {
-            console.log("Error al cerrar sesión: ", error);
+            toast.error("Error al cerrar sesión");
+            console.error("Logout error:", error);
         }
-    }
+    };
 
     // Get user details
     const getUser = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${serverUrl}/api/v1/user`, {
-                withCredentials: true,
+            const res = await axios.get(`${serverUrl}/api/v1/user`, { 
+                withCredentials: true 
             });
             setUser(res.data);
-            // Sync userState with current user data
             setUserState(prev => ({
                 ...prev,
                 name: res.data.user?.name || "",
@@ -111,46 +101,45 @@ export const UserContextProvider = ({children}) => {
                 bio: res.data.user?.bio || "",
                 photo: res.data.user?.photo || ""
             }));
-            setLoading(false);
         } catch (error) {
-            toast.error("Error al obtener los detalles del usuario");
+            toast.error("Error al obtener datos del usuario");
+            console.error("Get user error:", error);
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
     // Update user
     const updateUser = async (data) => {
         setLoading(true);
         try {
-            const res = await axios.patch(`${serverUrl}/api/v1/user`, data, {
-                withCredentials: true,
-            });
-            
-            // Update both user and userState
-            setUser(prev => ({
-                ...prev,
-                user: {
-                    ...prev.user,
-                    ...data
-                }
-            }));
-            
-            setUserState(prev => ({
-                ...prev,
-                ...data
-            }));
-            
-            toast.success("Datos actualizados correctamente");
-            setLoading(false);
+          const response = await axios.patch(`${serverUrl}/api/v1/user`, data, {
+            withCredentials: true
+          });
+      
+          if (response.data.requiresRelogin) {
+            // Forzar recarga completa para limpiar estados
+            window.location.href = '/login';
+            toast.success(response.data.message);
             return true;
+          }
+      
+          // Actualizar estado del usuario
+          setUser(prev => ({
+            ...prev,
+            user: { ...prev.user, ...response.data.user }
+          }));
+      
+          toast.success("Datos actualizados correctamente");
+          return true;
         } catch (error) {
-            toast.error("Error al actualizar el usuario");
-            setLoading(false);
-            return false;
+          toast.error(error.response?.data?.message || "Error al actualizar");
+          return false;
+        } finally {
+          setLoading(false);
         }
-    }
-
-    // Handle file upload
+      };
+    // Upload photo
     const uploadPhoto = async (file) => {
         setLoading(true);
         try {
@@ -159,68 +148,123 @@ export const UserContextProvider = ({children}) => {
             
             const res = await axios.patch(`${serverUrl}/api/v1/user/photo`, formData, {
                 withCredentials: true,
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             
             setUser(prev => ({
                 ...prev,
-                user: {
-                    ...prev.user,
-                    photo: res.data.photo
-                }
+                user: { ...prev.user, photo: res.data.photo }
             }));
             
             toast.success("Foto actualizada correctamente");
             return res.data.photo;
         } catch (error) {
             toast.error("Error al subir la foto");
+            console.error("Upload error:", error);
             throw error;
         } finally {
             setLoading(false);
         }
-    }
-
-    // Form handler
-    const handlerUserInput = (name) => (e) => {
-        const value = e.target.value;
-        setUserState(prev => ({
-            ...prev,
-            [name]: value,
-        }));
     };
 
+    // Get all users (admin/creator only)
+    const fetchAllUsers = async () => {
+        try {
+            const endpoint = user?.user?.role === 'admin' 
+                ? `${serverUrl}/api/v1/users` 
+                : `${serverUrl}/api/v1/creator/users`;
+            
+            const res = await axios.get(endpoint, { 
+                withCredentials: true 
+            });
+            setAllUsers(res.data.users);
+        } catch (error) {
+            toast.error("Error al obtener lista de usuarios");
+            console.error("Fetch users error:", error);
+        }
+    };
+
+    // Delete user (admin only)
+    const deleteUser = async (userId) => {
+        try {
+            if (userId === user?.user?._id) {
+                toast.error("No puedes eliminarte a ti mismo");
+                return false;
+            }
+
+            await axios.delete(`${serverUrl}/api/v1/users/${userId}`, { 
+                withCredentials: true 
+            });
+            
+            await fetchAllUsers();
+            toast.success("Usuario eliminado correctamente");
+            return true;
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Error al eliminar usuario");
+            console.error("Delete error:", error);
+            return false;
+        }
+    };
+
+    // Form input handler
+    const handlerUserInput = (name) => (e) => {
+        const value = e.target.value;
+        setUserState(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Initialize auth state
     useEffect(() => {
         if (!initialized) {
-            const loginStatusGetUser = async () => {
+            const initializeAuth = async () => {
                 const isLoggedIn = await userLoginStatus();
-                if(isLoggedIn) await getUser();
-                else setUser({});
+                if (isLoggedIn) {
+                    await getUser();
+                    if (user?.user?.role === 'admin' || user?.user?.role === 'creator') {
+                        await fetchAllUsers();
+                    }
+                } else {
+                    setUser(null);
+                }
                 setInitialized(true);
             };
-            loginStatusGetUser();
+            initializeAuth();
         }
-    }, [initialized, router]);
-    
+    }, [initialized]);
+
     return (
-       <UserContext.Provider
-        value={{
-            registerUser,
-            userState,
-            handlerUserInput,
-            loginUser,
-            logoutUser,
-            user,
-            getUser,
-            userLoginStatus,
-            updateUser,
-            uploadPhoto,
-            loading
-        }}>
+        <UserContext.Provider
+            value={{
+                // Auth functions
+                registerUser,
+                loginUser,
+                logoutUser,
+                userLoginStatus,
+                getUser,
+                updateUser,
+                uploadPhoto,
+                deleteUser,
+                fetchAllUsers,
+                
+                // State values
+                user,
+                allUsers,
+                userState,
+                handlerUserInput,
+                loading,
+                
+                // Utility
+                initialized
+            }}
+        >
             {children}
-        </UserContext.Provider> 
+        </UserContext.Provider>
     );
 };
 
-export const useUserContext = () => useContext(UserContext);
+export const useUserContext = () => {
+    const context = useContext(UserContext);
+    if (!context) {
+        throw new Error('useUserContext must be used within a UserContextProvider');
+    }
+    return context;
+};

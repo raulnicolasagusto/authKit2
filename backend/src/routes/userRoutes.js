@@ -1,34 +1,39 @@
 import express from 'express';
-import { loginUser, logoutUser, getUser, registerUser, updateUser, userLoginStatus, verifyEmail } from '../controllers/auth/userController.js';
-import { protect,adminMiddleware, creatorMiddleware } from '../middleware/authMiddleware.js';
+import { 
+  loginUser, 
+  logoutUser, 
+  getUser, 
+  registerUser, 
+  updateUser, 
+  userLoginStatus, 
+  verifyEmail,
+  forgotPassword, 
+  resetPassword,
+  uploadPhoto
+} from '../controllers/auth/userController.js';
+import { protect, adminMiddleware, creatorMiddleware } from '../middleware/authMiddleware.js';
 import { deleteUser, getAllUsers } from '../controllers/auth/adminController.js';
 import { testEmail } from "../controllers/auth/emailController.js";
-import { forgotPassword, resetPassword } from "../controllers/auth/userController.js";
-
 
 const router = express.Router();
 
-router.post("/register", registerUser)
+// Rutas públicas
+router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.get("/logout", logoutUser);
-// incluimos el middleware en la autenticacion , ya que no debemos estar registrados para ingresar a la ruta de perfil
-router.get("/user",protect, getUser);
-router.patch("/user",protect, updateUser);
-
-//admin routes, a agregamos un middleware mas para el admin, ya que este puede eliminar usuarios
-router.delete("/admin/users/:id",protect, adminMiddleware, deleteUser);
-
-//get all users
-router.get("/admin/users/creator", protect, creatorMiddleware, getAllUsers);
-
-//Loguin status
-router.get("/login_status", userLoginStatus);
-
-// verify user --> Email verification
-router.post("/verify-email", protect, testEmail);
-
-
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+// Rutas protegidas (requieren autenticación)
+router.get("/logout", protect, logoutUser);
+router.get("/user", protect, getUser);
+router.patch("/user", protect, updateUser);
+router.patch("/user/photo", protect, uploadPhoto);
+router.get("/login_status", protect, userLoginStatus);
+router.post("/verify-email", protect, testEmail);
+
+// Rutas de administración
+router.get("/users", protect, adminMiddleware, getAllUsers); // Para admins
+router.get("/creator/users", protect, creatorMiddleware, getAllUsers); // Para creators
+router.delete("/users/:id", protect, adminMiddleware, deleteUser); // Solo admins pueden eliminar
 
 export default router;
