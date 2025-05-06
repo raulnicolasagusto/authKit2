@@ -112,12 +112,12 @@ const logoutUser = async () => {
 
         toast.success("Usuario deslogueado correctamente");
         setUser(null);
+        setInitialized(false); // 🔄 Reinicia para cargar nuevo usuario después
         router.push("/login");
     } catch (error) {
         console.log("Error al cerrar sesión: ", error);
     }
 }
-
 //get user details
 const getUser = async () => {
     setLoading(true);
@@ -141,7 +141,34 @@ const getUser = async () => {
     }
 }
 
-
+    
+    //update user
+const updateUser = async (data) => {
+    setLoading(true);
+    try {
+      const res = await axios.patch(`${serverUrl}/api/v1/user`, data, {
+        withCredentials: true,
+      });
+      
+      // Actualiza el estado del usuario con la nueva bio
+      setUser(prev => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          bio: data.bio
+        }
+      }));
+      
+      toast.success("Bio updated successfully");
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.log("Error updating bio:", error);
+      toast.error("Error updating bio");
+      setLoading(false);
+      return false;
+    }
+  }
     // dynamic form hadler
 
     const handlerUserInput = (name) => (e) => {
@@ -184,6 +211,7 @@ const getUser = async () => {
             user,
             getUser,
             userLoginStatus,
+            updateUser,
             }}>
             {children}
         </UserContext.Provider> 
