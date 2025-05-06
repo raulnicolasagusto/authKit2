@@ -18,7 +18,8 @@ export const UserContextProvider = ({children}) => {
         email: "",
         password: "",
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [initialized, setInitialized] = useState(false); //
 
     //register user
     const registerUser = async (e) => {
@@ -51,27 +52,28 @@ export const UserContextProvider = ({children}) => {
 const loginUser = async (e) => {
     e.preventDefault();
     try {
-        const res = await axios.post(`${serverUrl}/api/v1/login`, {
-            email: userState.email,
-            password: userState.password,
-        },{
-            withCredentials: true,  // send cokies to the server
-        });
-        console.log("Usuario logueado correctamente: ", res.data);
-        toast.success("User logged in successfully: ");
-        //clear the form
-        setUserState({
-            email: "",
-            password: "",
-        });
-        router.push("/");
-
+      const res = await axios.post(`${serverUrl}/api/v1/login`, {
+        email: userState.email,
+        password: userState.password,
+      }, {
+        withCredentials: true,
+      });
+      
+      toast.success("User logged in successfully");
+      setUserState({
+        email: "",
+        password: "",
+      });
+      
+      // Forzar la obtención de los datos del usuario
+      await getUser();
+      router.push("/");
+      
     } catch (error) {
-        console.log("Error al iniciar sesión: ", error);
-        toast.error("El usuario y la contraseña no coinciden", error.response.data.message);
+      console.log("Error al iniciar sesión: ", error);
+      toast.error("El usuario y la contraseña no coinciden", error.response.data.message);
     }
-}
-
+  }
 // Get user looged in status
 
 const userLoginStatus = async () => {
@@ -91,10 +93,12 @@ const userLoginStatus = async () => {
         }
 
     } catch (error) {
+        
         console.log("Error al obtener el estado del usuario: ", error);
+        
     }
     
-    console.log("User logged in status", loggedIn);
+    
     return loggedIn;
     
 }
@@ -107,12 +111,35 @@ const logoutUser = async () => {
         });
 
         toast.success("Usuario deslogueado correctamente");
+        setUser(null);
         router.push("/login");
     } catch (error) {
         console.log("Error al cerrar sesión: ", error);
     }
 }
 
+//get user details
+const getUser = async () => {
+    setLoading(true);
+    try {
+        const res = await axios.get(`${serverUrl}/api/v1/user`, {
+            withCredentials: true,
+        });
+
+        setUser((prevState) => {
+            return {
+                ...prevState,
+                ...res.data,
+            }
+        });
+        setLoading(false);
+
+    } catch (error) {
+        console.log("Error al obtener los detalles del usuario: ", error);
+        toast.error("Error al obtener los detalles del usuario: ", error);
+        setLoading(false);
+    }
+}
 
 
     // dynamic form hadler
@@ -128,8 +155,22 @@ const logoutUser = async () => {
    
 
     useEffect(() => {
-       userLoginStatus();
-    },[]);
+        if (!initialized) { // ✅ Solo se ejecuta si no está inicializado
+            const loginStatusGetUser = async () => {
+                const isLoggedIn = await userLoginStatus();
+                
+                if (isLoggedIn) {
+                    await getUser();
+                } else {
+                    setUser({});
+                }
+                
+                setInitialized(true); // 🏁 Marca como inicializado
+            };
+
+            loginStatusGetUser();
+        }
+    }, [initialized, router]);
     
     return(
        
@@ -140,7 +181,9 @@ const logoutUser = async () => {
             handlerUserInput,
             loginUser,
             logoutUser,
-            user
+            user,
+            getUser,
+            userLoginStatus,
             }}>
             {children}
         </UserContext.Provider> 
